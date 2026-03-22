@@ -1,0 +1,23 @@
+{
+  "name": "@minesweeper/proving_system",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.22.0",
+  "devDependencies": {
+    "@noir-lang/noir_codegen": "1.0.0-beta.6"
+  },
+  "dependencies": {
+    "@aztec/bb.js": "0.84.0",
+    "@noir-lang/noir_js": "1.0.0-beta.6",
+    "@noir-lang/types": "1.0.0-beta.6",
+    "axios": "^1.13.6",
+    "dotenv": "catalog:"
+  }
+}

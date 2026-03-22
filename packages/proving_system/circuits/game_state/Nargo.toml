@@ -1,0 +1,7 @@
+[package]
+name = "game_state"
+type = "bin"
+authors = [""]
+
+[dependencies]
+assist = { path = "../assist" }

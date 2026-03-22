@@ -1,0 +1,6 @@
+[package]
+name = "assist"
+type = "lib"
+authors = [""]
+
+[dependencies]

@@ -1,0 +1,7 @@
+*.log
+.env
+payloads_and_respones/
+circuits/target/*proof.hex
+circuits/target/*publicInputs.json
+aggregations/
+.vscode/

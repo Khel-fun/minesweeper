@@ -1,0 +1,7 @@
+[package]
+name = "initialize_board"
+type = "bin"
+authors = [""]
+
+[dependencies]
+assist = { path = "../assist" }

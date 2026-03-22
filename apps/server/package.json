@@ -14,6 +14,7 @@
     "@minesweeper/api": "workspace:*",
     "@minesweeper/db": "workspace:*",
     "@minesweeper/env": "workspace:*",
+    "@minesweeper/proving_system": "workspace:*",
     "@trpc/server": "catalog:",
     "cors": "^2.8.5",
     "dotenv": "catalog:",

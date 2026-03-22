@@ -1,0 +1,5 @@
+[workspace]
+members = ["assist", "initialize_board", "game_state"]
+default_member = "initialize_board"
+
+[dependencies]

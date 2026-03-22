@@ -1,0 +1,3 @@
+{
+  "extends": "@minesweeper/config/tsconfig.base.json"
+}

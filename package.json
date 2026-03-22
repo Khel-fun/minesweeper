@@ -1,0 +1,31 @@
+{
+  "name": "minesweeper",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm -r dev",
+    "build": "pnpm -r build",
+    "check-types": "pnpm -r check-types",
+    "dev:web": "pnpm --filter web dev",
+    "dev:server": "pnpm --filter server dev",
+    "db:push": "pnpm --filter @minesweeper/db db:push",
+    "db:studio": "pnpm --filter @minesweeper/db db:studio",
+    "db:generate": "pnpm --filter @minesweeper/db db:generate",
+    "db:migrate": "pnpm --filter @minesweeper/db db:migrate"
+  },
+  "dependencies": {
+    "@minesweeper/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@minesweeper/config": "workspace:*",
+    "@types/node": "^22.13.14",
+    "typescript": "^5"
+  },
+  "packageManager": "pnpm@10.22.0"
+}

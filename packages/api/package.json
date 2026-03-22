@@ -1,0 +1,26 @@
+{
+  "name": "@minesweeper/api",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@minesweeper/db": "workspace:*",
+    "@minesweeper/env": "workspace:*",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@minesweeper/config": "workspace:*",
+    "@types/express": "catalog:",
+    "typescript": "^5"
+  }
+}

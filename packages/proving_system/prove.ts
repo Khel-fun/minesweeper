@@ -111,7 +111,7 @@ export async function generateProof(
     keccak: true,
   });
 
-  // TODO: Remove files on storing to db
+  
   const PATH_TO_PROOF_HEX = path.join(
     __dirname,
     "circuits",
@@ -134,7 +134,7 @@ export async function generateProof(
   }
 
   fs.writeFileSync(
-    // TODO: store `proofData.publicInputs` to db as TEXT[]
+    
     PATH_TO_PUBLIC_INPUTS,
     JSON.stringify(proof_data.publicInputs),
     "utf-8",
@@ -202,7 +202,7 @@ export async function verifyProof(
     submissionMode: "attestation",
   };
 
-  // TODO: for beta-testing, keep payloads and responses in db
+  
   const payloads_path = path.join(__dirname, "payloads_and_respones");
   if (!fs.existsSync(payloads_path)) {
     fs.mkdirSync(payloads_path, { recursive: true });
@@ -256,7 +256,7 @@ export async function verifyProof(
       console.log("##Job aggregated successfully");
       console.log(job_status_response.data);
 
-      // TODO: Remove files on storing to db
+      
       const aggregations_dir = path.join(__dirname, "aggregations");
       if (!fs.existsSync(aggregations_dir)) {
         fs.mkdirSync(aggregations_dir, { recursive: true });
@@ -267,7 +267,7 @@ export async function verifyProof(
         `${job_status_response.data.aggregationId}.json`,
       );
       fs.writeFileSync(
-        // TODO: store aggregation status response to db
+        
         aggregation_path,
         JSON.stringify(job_status_response.data, null, 2),
       );

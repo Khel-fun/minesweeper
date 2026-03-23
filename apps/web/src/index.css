@@ -1,1 +1,471 @@
 @import "@minesweeper/ui/globals.css";
+
+/* ===================================================================
+   MINESWEEPER GAME - PREMIUM DARK-MODE DESIGN SYSTEM
+   =================================================================== */
+
+/* --- Game Page Layout --- */
+.game-page {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, oklch(0.12 0.02 280), oklch(0.08 0.01 260));
+}
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 460px;
+}
+
+/* --- Header --- */
+.game-header {
+  text-align: center;
+  padding: 0.5rem 0;
+}
+
+.game-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: oklch(0.95 0 0);
+}
+
+.title-icon {
+  font-size: 1.5rem;
+}
+
+.title-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  background: linear-gradient(135deg, oklch(0.65 0.25 290), oklch(0.55 0.28 310));
+  color: white;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: super;
+}
+
+.game-subtitle {
+  font-size: 0.75rem;
+  color: oklch(0.6 0.02 280);
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* --- Controls --- */
+.game-controls {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.new-game-btn {
+  background: linear-gradient(135deg, oklch(0.55 0.2 155), oklch(0.45 0.18 155)) !important;
+  border: 1px solid oklch(0.5 0.15 155 / 50%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  padding: 0.5rem 1.75rem !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.new-game-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, oklch(0.6 0.22 155), oklch(0.5 0.2 155)) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px oklch(0.5 0.2 155 / 30%);
+}
+
+.new-game-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* --- Merkle Root --- */
+.merkle-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: oklch(0.18 0.01 280 / 80%);
+  border: 1px solid oklch(0.3 0.02 280);
+  border-radius: 0.5rem;
+  font-size: 0.7rem;
+  backdrop-filter: blur(8px);
+}
+
+.merkle-label {
+  color: oklch(0.65 0.15 290);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.merkle-value {
+  color: oklch(0.7 0.08 155);
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  font-size: 0.65rem;
+}
+
+/* --- Status Bar --- */
+.status-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem;
+  background: oklch(0.16 0.01 280 / 90%);
+  border: 1px solid oklch(0.25 0.02 280);
+  border-radius: 0.75rem;
+  backdrop-filter: blur(12px);
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.status-icon {
+  font-size: 1rem;
+}
+
+.status-value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: oklch(0.9 0 0);
+}
+
+.status-badge {
+  padding: 0.2rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-idle {
+  background: oklch(0.3 0.02 280);
+  color: oklch(0.7 0 0);
+}
+
+.badge-playing {
+  background: oklch(0.35 0.12 155 / 30%);
+  color: oklch(0.75 0.15 155);
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+.badge-won {
+  background: oklch(0.4 0.18 95 / 30%);
+  color: oklch(0.85 0.15 95);
+}
+
+.badge-lost {
+  background: oklch(0.35 0.15 25 / 30%);
+  color: oklch(0.8 0.15 25);
+}
+
+@keyframes pulse-badge {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* --- Proof Status --- */
+.proof-badge {
+  text-align: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.proof-pending {
+  background: oklch(0.35 0.12 70 / 20%);
+  color: oklch(0.8 0.12 70);
+  animation: pulse-badge 1.5s ease-in-out infinite;
+}
+
+.proof-generated {
+  background: oklch(0.35 0.12 250 / 20%);
+  color: oklch(0.75 0.12 250);
+  animation: pulse-badge 1.5s ease-in-out infinite;
+}
+
+.proof-verified {
+  background: oklch(0.35 0.15 155 / 20%);
+  color: oklch(0.8 0.15 155);
+}
+
+.proof-failed {
+  background: oklch(0.35 0.15 25 / 20%);
+  color: oklch(0.8 0.15 25);
+}
+
+/* ===================================================================
+   GAME BOARD
+   =================================================================== */
+
+.board-container {
+  position: relative;
+}
+
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 2px;
+  padding: 0.5rem;
+  background: oklch(0.12 0.02 280);
+  border: 2px solid oklch(0.3 0.04 280);
+  border-radius: 0.75rem;
+  box-shadow:
+    0 0 20px oklch(0.4 0.15 290 / 15%),
+    inset 0 0 30px oklch(0.1 0.02 280 / 50%);
+}
+
+/* --- Cell Base --- */
+.cell {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 800;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+}
+
+/* --- Hidden Cell --- */
+.cell-hidden {
+  background: linear-gradient(145deg, oklch(0.28 0.03 280), oklch(0.22 0.02 270));
+  border: 1px solid oklch(0.35 0.03 280);
+  box-shadow:
+    inset 0 1px 0 oklch(0.35 0.03 280),
+    inset 0 -1px 0 oklch(0.15 0.02 280);
+}
+
+.cell-hidden:hover:not(:disabled) {
+  background: linear-gradient(145deg, oklch(0.32 0.04 280), oklch(0.26 0.03 270));
+  border-color: oklch(0.45 0.08 290);
+  box-shadow:
+    0 0 8px oklch(0.5 0.15 290 / 25%),
+    inset 0 1px 0 oklch(0.4 0.04 280);
+}
+
+.cell-pressed {
+  background: oklch(0.18 0.02 280) !important;
+  box-shadow: inset 0 2px 4px oklch(0 0 0 / 40%) !important;
+  transform: scale(0.95);
+}
+
+/* --- Revealed Cell --- */
+.cell-revealed {
+  background: oklch(0.14 0.01 280);
+  border: 1px solid oklch(0.2 0.01 280);
+  cursor: default;
+  animation: cell-reveal 0.25s ease-out;
+}
+
+@keyframes cell-reveal {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- Number Display --- */
+.cell-number {
+  font-weight: 800;
+  font-size: 1.1rem;
+  text-shadow: 0 0 6px currentColor;
+}
+
+/* --- Flagged Cell --- */
+.cell-flagged {
+  background: linear-gradient(145deg, oklch(0.28 0.03 280), oklch(0.22 0.02 270));
+  border: 1px solid oklch(0.4 0.1 25);
+}
+
+.cell-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* --- Mine Cell --- */
+.cell-mine {
+  background: oklch(0.2 0.02 280);
+}
+
+.cell-exploded {
+  background: linear-gradient(135deg, oklch(0.4 0.2 25), oklch(0.3 0.15 15)) !important;
+  border-color: oklch(0.5 0.2 25) !important;
+  animation: explode 0.4s ease-out !important;
+}
+
+@keyframes explode {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- Victory Cell --- */
+.cell-victory {
+  border-color: oklch(0.4 0.12 155 / 40%);
+}
+
+/* --- Game Over Overlay --- */
+.board-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  backdrop-filter: blur(4px);
+  animation: overlay-appear 0.5s ease-out;
+  z-index: 10;
+}
+
+@keyframes overlay-appear {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.overlay-victory {
+  background: oklch(0.2 0.08 155 / 70%);
+}
+
+.overlay-defeat {
+  background: oklch(0.15 0.05 25 / 70%);
+}
+
+.overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.overlay-icon {
+  font-size: 3rem;
+  animation: bounce-icon 0.6s ease;
+}
+
+@keyframes bounce-icon {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.3); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+.overlay-text {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 8px oklch(0 0 0 / 50%);
+}
+
+/* --- Placeholder --- */
+.board-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 410px;
+  background: oklch(0.14 0.01 280);
+  border: 2px dashed oklch(0.3 0.03 280);
+  border-radius: 0.75rem;
+}
+
+.board-placeholder-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.board-placeholder-icon {
+  font-size: 3rem;
+  opacity: 0.4;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.board-placeholder-text {
+  color: oklch(0.55 0 0);
+  font-size: 0.9rem;
+}
+
+/* --- Footer --- */
+.game-footer {
+  text-align: center;
+  font-size: 0.7rem;
+  color: oklch(0.45 0.02 280);
+  padding: 0.25rem 0;
+  letter-spacing: 0.03em;
+}
+
+/* --- Responsive --- */
+@media (max-width: 480px) {
+  .cell {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+
+  .cell-number {
+    font-size: 0.9rem;
+  }
+
+  .cell-icon {
+    font-size: 0.9rem;
+  }
+
+  .game-title {
+    font-size: 1.4rem;
+  }
+}

@@ -236,12 +236,18 @@ importers:
       '@minesweeper/env':
         specifier: workspace:*
         version: link:../env
+      '@minesweeper/proving_system':
+        specifier: workspace:*
+        version: link:../proving_system
       '@trpc/client':
         specifier: 'catalog:'
         version: 11.14.1(@trpc/server@11.14.1(typescript@5.9.3))(typescript@5.9.3)
       '@trpc/server':
         specifier: 'catalog:'
         version: 11.14.1(typescript@5.9.3)
+      axios:
+        specifier: ^1.13.6
+        version: 1.13.6
       dotenv:
         specifier: 'catalog:'
         version: 17.3.1

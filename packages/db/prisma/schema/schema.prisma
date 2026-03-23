@@ -1,10 +1,42 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated"
+  provider     = "prisma-client"
+  output       = "../generated"
   moduleFormat = "esm"
-  runtime = "nodejs"
+  runtime      = "nodejs"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum GameStatus {
+  IN_PROGRESS
+  WON
+  LOST
+  ABANDONED
+}
+
+model Game {
+  id          String     @id @default(uuid())
+  seed        String // Secret seed (hex field element)
+  merkleRoot  String // Public Merkle root commitment
+  status      GameStatus @default(IN_PROGRESS)
+  xp          Int        @default(0)
+  proofHex    String? // ZK proof hex (GAME_STATE circuit)
+  proofJobId  String? // Kurier job ID
+  proofStatus String? // "pending" | "verified" | "failed"
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  cells       GameCell[]
+}
+
+model GameCell {
+  id     String @id @default(uuid())
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id])
+  index  Int // 0-80
+  value  Int // 0-9 (9 = mine)
+  salt   String // Field element (hex string)
+
+  @@unique([gameId, index])
 }

@@ -13,8 +13,10 @@
   "dependencies": {
     "@minesweeper/db": "workspace:*",
     "@minesweeper/env": "workspace:*",
+    "@minesweeper/proving_system": "workspace:*",
     "@trpc/client": "catalog:",
     "@trpc/server": "catalog:",
+    "axios": "^1.13.6",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },

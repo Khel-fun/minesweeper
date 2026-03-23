@@ -1,12 +1,10 @@
 generator client {
-  provider     = "prisma-client"
+  provider = "prisma-client"
   output       = "../generated"
-  moduleFormat = "esm"
-  runtime      = "nodejs"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
 }
 
 enum GameStatus {
@@ -24,7 +22,7 @@ model Game {
   xp          Int        @default(0)
   proofHex    String? // ZK proof hex (GAME_STATE circuit)
   proofJobId  String? // Kurier job ID
-  proofStatus String? // "pending" | "verified" | "failed"
+  proofStatus String? // "included-in-block" | "finalized" | "pending" | "aggregated"
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   cells       GameCell[]

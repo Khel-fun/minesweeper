@@ -1,40 +1,244 @@
 generator client {
   provider = "prisma-client"
-  output       = "../generated"
+  output   = "../generated"
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
 enum GameStatus {
+  CREATED
   IN_PROGRESS
   WON
   LOST
   ABANDONED
 }
 
+enum MoveResult {
+  SAFE
+  MINE
+}
+
+enum CircuitKind {
+  INIT_BOARD
+  GAME_STATE
+}
+
+enum ProofAttemptStatus {
+  PENDING_GENERATION
+  GENERATED
+  LOCAL_VERIFIED
+  SUBMITTED
+  VERIFIED
+  FAILED
+}
+
+enum ZkVerifyJobStatus {
+  QUEUED
+  SUBMITTED
+  VALID
+  INCLUDED_IN_BLOCK
+  AGGREGATION_PENDING
+  AGGREGATED
+  AGGREGATION_PUBLISHED
+  FINALIZED
+  FAILED
+}
+
+enum PublicationStatus {
+  SIGNED
+  SUBMITTED
+  CONFIRMED
+  FAILED
+}
+
+model Player {
+  id           String            @id @default(uuid()) @db.Uuid
+  walletAddress String           @unique @db.VarChar(42)
+  totalXp      Int               @default(0)
+  gamesPlayed  Int               @default(0)
+  gamesWon     Int               @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  games        Game[]
+  publications GamePublication[]
+}
+
 model Game {
-  id          String     @id @default(uuid())
-  seed        String // Secret seed (hex field element)
-  merkleRoot  String // Public Merkle root commitment
-  status      GameStatus @default(IN_PROGRESS)
-  xp          Int        @default(0)
-  proofHex    String? // ZK proof hex (GAME_STATE circuit)
-  proofJobId  String? // Kurier job ID
-  proofStatus String? // "included-in-block" | "finalized" | "pending" | "aggregated"
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  cells       GameCell[]
+  id                String            @id @default(uuid()) @db.Uuid
+  playerId          String?           @db.Uuid
+  player            Player?           @relation(fields: [playerId], references: [id])
+  status            GameStatus        @default(IN_PROGRESS)
+  seed              String            @db.Text
+  merkleRoot        String            @db.Text
+  gridSize          Int               @default(9)
+  mineCount         Int               @default(10)
+  safeCellCount     Int               @default(71)
+  xpEarned          Int               @default(0)
+  revealedSafeCount Int               @default(0)
+  moveCount         Int               @default(0)
+  mineHitOnMove     Int?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  endedAt           DateTime?
+  cells             GameCell[]
+  moves             GameMove[]
+  moveCells         GameMoveCell[]
+  proofs            GameProof[]
+  publication       GamePublication?
+
+  @@index([playerId, createdAt])
+  @@index([status, createdAt])
+  @@index([merkleRoot])
 }
 
 model GameCell {
-  id     String @id @default(uuid())
-  gameId String
-  game   Game   @relation(fields: [gameId], references: [id])
-  index  Int // 0-80
-  value  Int // 0-9 (9 = mine)
-  salt   String // Field element (hex string)
+  id        String   @id @default(uuid()) @db.Uuid
+  gameId    String   @db.Uuid
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  index     Int
+  value     Int
+  salt      String   @db.Text
+  createdAt DateTime @default(now())
 
   @@unique([gameId, index])
+  @@index([gameId, value])
+}
+
+model GameMove {
+  id               String         @id @default(uuid()) @db.Uuid
+  gameId           String         @db.Uuid
+  game             Game           @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  moveNumber       Int
+  triggerCellIndex Int
+  result           MoveResult
+  revealedCount    Int
+  createdAt        DateTime       @default(now())
+  revealedCells    GameMoveCell[]
+
+  @@unique([gameId, moveNumber])
+  @@index([gameId, createdAt])
+}
+
+model GameMoveCell {
+  id         String   @id @default(uuid()) @db.Uuid
+  gameId     String   @db.Uuid
+  moveId     String   @db.Uuid
+  game       Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  move       GameMove @relation(fields: [moveId], references: [id], onDelete: Cascade)
+  cellIndex  Int
+  cellValue  Int
+  revealOrder Int
+  wasCascade Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([gameId, cellIndex])
+  @@unique([moveId, revealOrder])
+  @@index([gameId, moveId])
+}
+
+model CircuitArtifact {
+  id             String      @id @default(uuid()) @db.Uuid
+  kind           CircuitKind
+  version        String?     @db.VarChar(64)
+  compiledCircuit Json?
+  vkeyHex        String      @db.Text
+  vkHash         String      @db.VarChar(66)
+  artifactSha256 String      @db.VarChar(64)
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  proofs         GameProof[]
+
+  @@unique([kind, artifactSha256])
+  @@index([kind, isActive])
+}
+
+model GameProof {
+  id                    String               @id @default(uuid()) @db.Uuid
+  gameId                String               @db.Uuid
+  circuitArtifactId     String               @db.Uuid
+  game                  Game                 @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  circuitArtifact       CircuitArtifact      @relation(fields: [circuitArtifactId], references: [id])
+  kind                  CircuitKind
+  attemptNumber         Int
+  status                ProofAttemptStatus   @default(PENDING_GENERATION)
+  proofHex              String?              @db.Text
+  proofHexHash          String?              @db.VarChar(64)
+  publicInputs          String[]             @default([])
+  publicInputsHash      String?              @db.VarChar(64)
+  localVerificationPassed Boolean?
+  errorMessage          String?              @db.Text
+  proofPayloadJson      Json?
+  submitResponseJson    Json?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  verificationJob       ProofVerificationJob?
+  attestation           ProofAttestation?
+
+  @@unique([gameId, kind, attemptNumber])
+  @@index([gameId, kind, status, createdAt])
+}
+
+model ProofVerificationJob {
+  id                  String            @id @default(uuid()) @db.Uuid
+  proofId             String            @unique @db.Uuid
+  proof               GameProof         @relation(fields: [proofId], references: [id], onDelete: Cascade)
+  zkVerifyJobId       String            @unique
+  status              ZkVerifyJobStatus
+  aggregationId       BigInt?
+  aggregationResponse Json?
+  leaf                String?           @db.Text
+  leafIndex           Int?
+  numberOfLeaves      Int?
+  merkleProof         String[]          @default([])
+  statement           String?           @db.Text
+  txHash              String?           @db.Text
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([status])
+  @@index([aggregationId])
+}
+
+model ProofAttestation {
+  id                      String    @id @default(uuid()) @db.Uuid
+  proofId                 String    @unique @db.Uuid
+  proof                   GameProof @relation(fields: [proofId], references: [id], onDelete: Cascade)
+  zkverifyContractAddress String    @db.Text
+  domainId                BigInt
+  aggregationId           BigInt
+  leaf                    String    @db.Text
+  merklePath              String[]  @default([])
+  leafCount               BigInt
+  leafIndex               BigInt
+  verified                Boolean?
+  txHash                  String?   @db.Text
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([domainId, aggregationId])
+}
+
+model GamePublication {
+  id              String            @id @default(uuid()) @db.Uuid
+  gameId          String            @unique @db.Uuid
+  playerId        String            @db.Uuid
+  game            Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player          Player            @relation(fields: [playerId], references: [id])
+  chainId         Int
+  contractAddress String            @db.Text
+  signerAddress   String            @db.VarChar(42)
+  playerAddress   String            @db.VarChar(42)
+  xpEarned        Int
+  won             Boolean
+  signatureHex    String            @db.Text
+  status          PublicationStatus @default(SIGNED)
+  txHash          String?           @unique @db.Text
+  publishedAt     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([playerId, createdAt])
+  @@index([status, createdAt])
 }

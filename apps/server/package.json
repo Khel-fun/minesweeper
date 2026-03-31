@@ -25,10 +25,12 @@
     "@minesweeper/config": "workspace:*",
     "@types/cors": "^2.8.17",
     "@types/express": "catalog:",
-    "@types/node": "^22.13.14",
+    "@types/node": "^22.19.15",
+    "prisma": "^7.5.0",
+    "ts-node": "^10.9.2",
     "tsdown": "^0.16.5",
     "tsx": "^4.19.2",
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   },
   "trustedDependencies": [
     "supabase"

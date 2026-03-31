@@ -3,6 +3,7 @@ import { gameRouter } from "./game";
 
 export const appRouter = router({
   healthCheck: publicProcedure.query(() => {
+    console.log("[API] healthCheck hit");
     return "OK";
   }),
   game: gameRouter,

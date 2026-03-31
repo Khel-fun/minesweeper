@@ -25,15 +25,19 @@ export const gameRouter = router({
   // START GAME — Phase 1: The Commitment
   // -----------------------------------------------------------------------
   startGame: publicProcedure.mutation(async () => {
+    console.log("[Game] Starting new game...");
     // 1. Fetch cryptographically secure seed from Kurier
     let seed: string;
     try {
+      console.log(`[Game] Fetching seed from Kurier at ${env.KURIER_URL}...`);
       const seedResponse = await axios.post(
         `${env.KURIER_URL}/random-hash/${env.KURIER_API}`,
         {},
       );
       seed = seedResponse.data.hash;
-    } catch (error) {
+      console.log(`[Game] Received seed: ${seed.slice(0, 16)}...`);
+    } catch (error: any) {
+      console.error("[Game] Kurier seed fetch failed:", error?.response?.data || error.message);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to fetch seed from Kurier",
@@ -41,32 +45,43 @@ export const gameRouter = router({
     }
 
     // 2. Generate the board using the ZK circuit's oracle
-    const { grid, merkleRoot } = await generateBoard(seed);
+    console.log("[Game] Generating board...");
+    try {
+      const { grid, merkleRoot } = await generateBoard(seed);
+      console.log(`[Game] Board generated. Merkle Root: ${merkleRoot.slice(0, 16)}...`);
 
-    // 3. Persist game + cells to database
-    const game = await prisma.game.create({
-      data: {
-        seed,
-        merkleRoot,
-        cells: {
-          create: grid.map((cell: { index: string; value: string; salt: string }) => ({
-            index: Number(cell.index),
-            value: Number(cell.value),
-            salt: cell.salt,
-          })),
+      // 3. Persist game + cells to database
+      console.log("[Game] Persisting game to database...");
+      const game = await prisma.game.create({
+        data: {
+          seed,
+          merkleRoot,
+          cells: {
+            create: grid.map((cell: { index: string; value: string; salt: string }) => ({
+              index: Number(cell.index),
+              value: Number(cell.value),
+              salt: cell.salt,
+            })),
+          },
         },
-      },
-    });
+      });
 
-    console.log(
-      `[Game] Created game ${game.id} with root ${merkleRoot.slice(0, 16)}...`,
-    );
+      console.log(
+        `[Game] Created game ${game.id} with root ${merkleRoot.slice(0, 16)}...`,
+      );
 
-    // 4. Return only the game ID and public Merkle root (no private state!)
-    return {
-      gameId: game.id,
-      merkleRoot,
-    };
+      // 4. Return only the game ID and public Merkle root (no private state!)
+      return {
+        gameId: game.id,
+        merkleRoot,
+      };
+    } catch (error: any) {
+      console.error("[Game] Board generation or persistence failed:", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error.message || "Failed to initialize game",
+      });
+    }
   }),
 
   // -----------------------------------------------------------------------
@@ -81,6 +96,7 @@ export const gameRouter = router({
     )
     .mutation(async ({ input }) => {
       const { gameId, index } = input;
+      console.log(`[Game] Revealing cell ${index} for game ${gameId}...`);
 
       // 1. Load game and verify it's in progress
       const game = await prisma.game.findUnique({
@@ -89,9 +105,11 @@ export const gameRouter = router({
       });
 
       if (!game) {
+        console.error(`[Game] ${gameId} not found.`);
         throw new TRPCError({ code: "NOT_FOUND", message: "Game not found" });
       }
       if (game.status !== "IN_PROGRESS") {
+        console.warn(`[Game] ${gameId} is already ${game.status}.`);
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: `Game is already ${game.status}`,
@@ -101,6 +119,7 @@ export const gameRouter = router({
       // 2. Look up the requested cell
       const cell = game.cells.find((c) => c.index === index);
       if (!cell) {
+        console.error(`[Game] Cell ${index} not found for ${gameId}.`);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Cell ${index} not found`,
@@ -118,6 +137,7 @@ export const gameRouter = router({
 
       // 4. Check for mine hit
       if (cell.value === MINE_VALUE) {
+        console.log(`[Game] Player hit a mine at ${index}! Game Over.`);
         // Game over — defeat
         await prisma.game.update({
           where: { id: gameId },
@@ -132,7 +152,9 @@ export const gameRouter = router({
       }
 
       // 5. Resolve cascade for safe cells
+      console.log(`[Game] Cell ${index} is safe. Value: ${cell.value}.`);
       const revealedCells = getCascade(gridForCascade as any, index);
+      console.log(`[Game] Cascaded into ${revealedCells.length} cells.`);
 
       return {
         cells: revealedCells,
@@ -158,6 +180,7 @@ export const gameRouter = router({
     )
     .mutation(async ({ input }) => {
       const { gameId, gameLog } = input;
+      console.log(`[Game] Ending game ${gameId} with log length ${gameLog.length}...`);
 
       // 1. Load game
       const game = await prisma.game.findUnique({
@@ -166,6 +189,7 @@ export const gameRouter = router({
       });
 
       if (!game) {
+        console.error(`[Game] ${gameId} not found.`);
         throw new TRPCError({ code: "NOT_FOUND", message: "Game not found" });
       }
 
@@ -174,8 +198,10 @@ export const gameRouter = router({
         index: c.index,
         value: c.value,
       }));
+      console.log(`[Game] Validating game log...`);
       const validation = validateGameLog(gameLog, dbCells);
       if (!validation.valid) {
+        console.error(`[Game] Validation failed: ${validation.reason}`);
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: `Game log validation failed: ${validation.reason}`,
@@ -188,6 +214,7 @@ export const gameRouter = router({
       );
       const hitMine = gameLog.some((e) => e.value === MINE_VALUE);
       const isVictory = !hitMine && safeCellsRevealed.length >= SAFE_CELLS;
+      console.log(`[Game] Victory: ${isVictory}, Revealed: ${safeCellsRevealed.length}/${SAFE_CELLS}.`);
 
       const revealedCells: RevealedCell[] = safeCellsRevealed.map((e) => ({
         index: e.index,
@@ -198,6 +225,7 @@ export const gameRouter = router({
       const status = isVictory ? "WON" : "LOST";
 
       // 4. Update game in database
+      console.log(`[Game] Updating DB status to ${status}...`);
       await prisma.game.update({
         where: { id: gameId },
         data: {
@@ -217,12 +245,14 @@ export const gameRouter = router({
         }));
 
       // Fire and forget — proof generation runs in background
+      console.log(`[Game] Firing off async proof generation for ${gameId}...`);
       generateGameStateProof(
         gameLog as GameLogEntry[],
         gridForProof as any,
         game.merkleRoot,
       )
         .then(async ({ proofHex, publicInputs }) => {
+          console.log(`[Game] Proof generated for ${gameId}. Status: generated.`);
           await prisma.game.update({
             where: { id: gameId },
             data: { proofHex, proofStatus: "generated" },
@@ -230,11 +260,13 @@ export const gameRouter = router({
 
           // Submit to Kurier for verification
           try {
+            console.log(`[Game] Submitting proof for ${gameId} to Kurier...`);
             await submitProofToKurier(
               CircuitKind.GAME_STATE,
               proofHex,
               publicInputs,
             );
+            console.log(`[Game] Proof verified for ${gameId}. Status: verified.`);
             await prisma.game.update({
               where: { id: gameId },
               data: { proofStatus: "verified" },

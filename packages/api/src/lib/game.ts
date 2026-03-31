@@ -15,8 +15,15 @@ export const SENTINEL = 255;
 // Board generation — delegates to the ZK circuit's unconstrained oracle
 // ---------------------------------------------------------------------------
 export async function generateBoard(seed: string) {
-  const [grid, merkleRoot] = await get_game_grid(seed);
-  return { grid, merkleRoot: merkleRoot as string };
+  console.log(`[Circuit] Calling get_game_grid with seed ${seed.slice(0, 16)}...`);
+  try {
+    const [grid, merkleRoot] = await get_game_grid(seed);
+    console.log(`[Circuit] get_game_grid returned successfully. Merkle Root: ${merkleRoot.slice(0, 16)}...`);
+    return { grid, merkleRoot: merkleRoot as string };
+  } catch (error: any) {
+    console.error("[Circuit] get_game_grid failed:", error);
+    throw error;
+  }
 }
 
 // ---------------------------------------------------------------------------

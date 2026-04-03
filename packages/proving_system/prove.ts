@@ -9,21 +9,33 @@ import {
 } from "./utils";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+console.log("[ZK Debug] __filename:", __filename);
+console.log("[ZK Debug] __dirname:", __dirname);
+console.log("[ZK Debug] process.cwd():", process.cwd());
+
 // setting up Noir and UltraHonk Backend for specific circuit
 export function setupProver(circuit_name: CircuitKind) {
-  const PATH_TO_CIRCUIT = path.join(
+  // Use path.resolve and __dirname to reliably find the circuit relative to this file
+  const PATH_TO_CIRCUIT = path.resolve(
     __dirname,
     "circuits",
     "target",
     `${circuit_name}.json`,
   );
 
+
+  console.log(`[ZK] Looking for circuit at: ${PATH_TO_CIRCUIT}`);
+
   if (!fs.existsSync(PATH_TO_CIRCUIT)) {
-    throw new Error(`[ERR: Circuits] Circuit file not found`);
+    throw new Error(`[ERR: Circuits] Circuit file not found at ${PATH_TO_CIRCUIT}`);
   }
 
   const circuit = JSON.parse(fs.readFileSync(PATH_TO_CIRCUIT, "utf8"));
@@ -50,7 +62,6 @@ export async function registerVk(circuit_name: CircuitKind) {
 
   const vkey = uint8ArrayToHex(verification_key);
   const VK_HEX_PATH = path.join(
-    __dirname,
     "circuits",
     "target",
     `${circuit_name}_vk.hex`,
@@ -77,7 +88,6 @@ export async function registerVk(circuit_name: CircuitKind) {
   );
 
   const VK_HASH_PATH = path.join(
-    __dirname,
     "circuits",
     "target",
     `${circuit_name}_vkHash.json`,
@@ -113,14 +123,12 @@ export async function generateProof(
 
   
   const PATH_TO_PROOF_HEX = path.join(
-    __dirname,
     "circuits",
     "target",
     `${circuit_name}_proof.hex`,
   );
 
   const PATH_TO_PUBLIC_INPUTS = path.join(
-    __dirname,
     "circuits",
     "target",
     `${circuit_name}_publicInputs.json`,
@@ -225,7 +233,6 @@ export async function verifyProof(
   );
 
   const path_to_submit_proof_response = path.join(
-    __dirname,
     "payloads_and_respones",
     `${circuit_name}_proof_response.json`,
   );

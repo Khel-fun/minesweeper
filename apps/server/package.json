@@ -10,15 +10,20 @@
     "start": "node dist/index.mjs"
   },
   "dependencies": {
+    "@aztec/bb.js": "0.84.0",
     "@hono/trpc-server": "^0.4.0",
     "@minesweeper/api": "workspace:*",
     "@minesweeper/db": "workspace:*",
     "@minesweeper/env": "workspace:*",
     "@minesweeper/proving_system": "workspace:*",
+    "@noir-lang/noir_js": "1.0.0-beta.6",
+    "@noir-lang/types": "1.0.0-beta.6",
     "@trpc/server": "catalog:",
+    "bullmq": "^5.71.1",
     "cors": "^2.8.5",
     "dotenv": "catalog:",
     "express": "^5.1.0",
+    "ioredis": "^5.10.1",
     "zod": "catalog:"
   },
   "devDependencies": {

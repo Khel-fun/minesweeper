@@ -2,6 +2,10 @@ import { CircuitKind } from "./type";
 import type { AbiParameter } from "@noir-lang/types";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 interface CircuitAbi {
   parameters: AbiParameter[];

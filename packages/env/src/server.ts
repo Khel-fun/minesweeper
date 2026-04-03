@@ -10,6 +10,7 @@ export const env = createEnv({
     KURIER_URL: z.string().url(),
     KURIER_API: z.string().min(1),
     SIGNING_PRIVATE_KEY: z.string().min(1).optional(),
+    REDIS_URL: z.string().url().default("redis://localhost:6379"),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

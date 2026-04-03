@@ -16,6 +16,10 @@ app.use(
 
 app.use(
   "/trpc",
+  (req, res, next) => {
+    console.log(`[Server] Request: ${req.method} ${req.url}`);
+    next();
+  },
   createExpressMiddleware({
     router: appRouter,
     createContext,

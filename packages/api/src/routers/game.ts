@@ -18,6 +18,7 @@ import {
   generateGameStateProof,
   submitProofToKurier,
 } from "../lib/proving";
+import { proofQueue } from "../lib/queue";
 import { CircuitKind } from "@minesweeper/proving_system/type";
 
 export const gameRouter = router({
@@ -235,7 +236,7 @@ export const gameRouter = router({
         },
       });
 
-      // 5. Trigger async proof generation (non-blocking)
+      // 5. Submit job to the proof generation queue (non-blocking)
       const gridForProof = game.cells
         .sort((a, b) => a.index - b.index)
         .map((c) => ({
@@ -244,48 +245,13 @@ export const gameRouter = router({
           salt: c.salt,
         }));
 
-      // Fire and forget — proof generation runs in background
-      console.log(`[Game] Firing off async proof generation for ${gameId}...`);
-      generateGameStateProof(
-        gameLog as GameLogEntry[],
-        gridForProof as any,
-        game.merkleRoot,
-      )
-        .then(async ({ proofHex, publicInputs }) => {
-          console.log(`[Game] Proof generated for ${gameId}. Status: generated.`);
-          await prisma.game.update({
-            where: { id: gameId },
-            data: { proofHex, proofStatus: "generated" },
-          });
-
-          // Submit to Kurier for verification
-          try {
-            console.log(`[Game] Submitting proof for ${gameId} to Kurier...`);
-            await submitProofToKurier(
-              CircuitKind.GAME_STATE,
-              proofHex,
-              publicInputs,
-            );
-            console.log(`[Game] Proof verified for ${gameId}. Status: verified.`);
-            await prisma.game.update({
-              where: { id: gameId },
-              data: { proofStatus: "verified" },
-            });
-          } catch (err) {
-            console.error(`[ZK] Kurier verification failed for game ${gameId}:`, err);
-            await prisma.game.update({
-              where: { id: gameId },
-              data: { proofStatus: "failed" },
-            });
-          }
-        })
-        .catch(async (err) => {
-          console.error(`[ZK] Proof generation failed for game ${gameId}:`, err);
-          await prisma.game.update({
-            where: { id: gameId },
-            data: { proofStatus: "failed" },
-          });
-        });
+      console.log(`[Game] Adding proof generation job for ${gameId} to the queue...`);
+      await proofQueue.add(`proof-${gameId}`, {
+        gameId,
+        gameLog,
+        gridForProof,
+        merkleRoot: game.merkleRoot,
+      });
 
       return {
         xp,

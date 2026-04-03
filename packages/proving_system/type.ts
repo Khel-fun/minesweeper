@@ -14,6 +14,16 @@ export enum VerificationStatus {
   AGGREGATED = "Aggregated",
 }
 
+export type AggregationDetails = {
+  receipt: string;
+  receiptBlockHash: string;
+  root: string;
+  leaf: string;
+  leafIndex: number;
+  numberOfLeaves: number;
+  merkleProof: string[];
+};
+
 /**
  * Subset of the Kurier job-status response that maps to the
  * `VerificationJob` Prisma model.
@@ -27,5 +37,5 @@ export interface KurierJobStatusResponse {
   /** Aggregation batch ID — populated at AGGREGATION_PENDING or later. */
   aggregationId: number | null;
   /** Full aggregation metadata (flexible JSON blob). */
-  aggregationDetails: Record<string, unknown> | null;
+  aggregationDetails: AggregationDetails | null;
 }

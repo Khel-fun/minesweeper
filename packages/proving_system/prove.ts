@@ -224,7 +224,7 @@ const KURIER_STATUS_MAP: Record<string, VerificationStatus> = {
  * Returns only the fields that map to the `VerificationJob` Prisma model
  * so the API layer can persist them without further transformation.
  *
- * @param jobId — The Kurier job ID returned by `verifyProof()`.
+ * @param jobId — The Kurier job ID returned by `verifyProof()` and stored in the database.
  */
 export async function queryKurierStatus(
   jobId: string,

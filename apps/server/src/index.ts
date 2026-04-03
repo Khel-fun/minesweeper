@@ -6,6 +6,7 @@ import cors from "cors";
 import express from "express";
 
 import { initProofWorker } from "@minesweeper/api/lib/proofQueue";
+import { initKurierPoller } from "@minesweeper/api/lib/kurierPoller";
 
 const app = express();
 
@@ -32,5 +33,6 @@ app.get("/", (_req, res) => {
 
 app.listen(3000, () => {
   initProofWorker();
+  initKurierPoller();
   console.log("Server is running on http://localhost:3000");
 });

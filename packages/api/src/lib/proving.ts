@@ -52,6 +52,7 @@ export async function submitProofToKurier(
   publicInputs: string[],
 ) {
   console.log(`[ZK] Submitting ${circuitKind} proof to Kurier...`);
-  await verifyProof(circuitKind, proofHex, publicInputs);
+  const { jobId, optimisticVerify } = await verifyProof(circuitKind, proofHex, publicInputs);
   console.log(`[ZK] ${circuitKind} proof submitted to Kurier successfully.`);
+  return { jobId, optimisticVerify };
 }

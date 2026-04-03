@@ -5,6 +5,8 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import cors from "cors";
 import express from "express";
 
+import { initProofWorker } from "@minesweeper/api/lib/proofQueue";
+
 const app = express();
 
 app.use(
@@ -29,5 +31,6 @@ app.get("/", (_req, res) => {
 });
 
 app.listen(3000, () => {
+  initProofWorker();
   console.log("Server is running on http://localhost:3000");
 });

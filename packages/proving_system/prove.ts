@@ -1,6 +1,10 @@
 import { type CompiledCircuit, Noir } from "@noir-lang/noir_js";
 import { UltraHonkBackend } from "@aztec/bb.js";
-import { CircuitKind } from "./type";
+import {
+  CircuitKind,
+  VerificationStatus,
+  type KurierJobStatusResponse,
+} from "./type";
 import {
   extractAbiParameters,
   loadCircuitAbi,
@@ -9,17 +13,20 @@ import {
 } from "./utils";
 import fs from "fs";
 import path from "path";
+import { resolve } from "path";
+import { fileURLToPath } from "url";
 import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // setting up Noir and UltraHonk Backend for specific circuit
 export function setupProver(circuit_name: CircuitKind) {
-  const PATH_TO_CIRCUIT = path.join(
+  const PATH_TO_CIRCUIT = resolve(
     __dirname,
-    "circuits",
-    "target",
-    `${circuit_name}.json`,
+    `../proving_system/circuits/target/${circuit_name}.json`,
   );
 
   if (!fs.existsSync(PATH_TO_CIRCUIT)) {
@@ -49,11 +56,9 @@ export async function registerVk(circuit_name: CircuitKind) {
   const verification_key = await backend.getVerificationKey({ keccak: true });
 
   const vkey = uint8ArrayToHex(verification_key);
-  const VK_HEX_PATH = path.join(
+  const VK_HEX_PATH = resolve(
     __dirname,
-    "circuits",
-    "target",
-    `${circuit_name}_vk.hex`,
+    `../proving_system/circuits/target/${circuit_name}_vk.hex`,
   );
   fs.writeFileSync(VK_HEX_PATH, vkey);
   if (!fs.existsSync(VK_HEX_PATH)) {
@@ -76,11 +81,9 @@ export async function registerVk(circuit_name: CircuitKind) {
     vk_payload,
   );
 
-  const VK_HASH_PATH = path.join(
+  const VK_HASH_PATH = resolve(
     __dirname,
-    "circuits",
-    "target",
-    `${circuit_name}_vkHash.json`,
+    `../proving_system/circuits/target/${circuit_name}_vkHash.json`,
   );
   fs.writeFileSync(VK_HASH_PATH, JSON.stringify(reg_vk_response.data));
   if (!fs.existsSync(VK_HASH_PATH)) {
@@ -111,37 +114,9 @@ export async function generateProof(
     keccak: true,
   });
 
-  
-  const PATH_TO_PROOF_HEX = path.join(
-    __dirname,
-    "circuits",
-    "target",
-    `${circuit_name}_proof.hex`,
-  );
-
-  const PATH_TO_PUBLIC_INPUTS = path.join(
-    __dirname,
-    "circuits",
-    "target",
-    `${circuit_name}_publicInputs.json`,
-  );
+  // Removed unused PATH_TO_PROOF_HEX and PATH_TO_PUBLIC_INPUTS
 
   const proofHex = uint8ArrayToHex(proof_data.proof);
-
-  fs.writeFileSync(PATH_TO_PROOF_HEX, proofHex); // TODO: store `proofHex` to db as TEXT
-  if (!fs.existsSync(PATH_TO_PROOF_HEX)) {
-    throw new Error("[ERR: Proof] Failed to write proof to file");
-  }
-
-  fs.writeFileSync(
-    
-    PATH_TO_PUBLIC_INPUTS,
-    JSON.stringify(proof_data.publicInputs),
-    "utf-8",
-  );
-  if (!fs.existsSync(PATH_TO_PUBLIC_INPUTS)) {
-    throw new Error("[ERR: Proof] Failed to write public inputs to file");
-  }
 
   console.log(`## Verifying Proof w/ BB.js for ${circuit_name}`);
   const is_valid = await backend.verifyProof(proof_data, {
@@ -163,17 +138,15 @@ export async function verifyProof(
   circuit_name: CircuitKind,
   proofHex: string,
   formattedPublicInputs: string[],
-) {
+): Promise<{ jobId: string; optimisticVerify: string }> {
   const { KURIER_URL, KURIER_API } = process.env;
   if (!KURIER_URL || !KURIER_API) {
     throw new Error("[ERR: Env] Missing environment variables");
   }
 
-  const VK_HASH_PATH = path.join(
+  const VK_HASH_PATH = resolve(
     __dirname,
-    "circuits",
-    "target",
-    `${circuit_name}_vkHash.json`,
+    `../proving_system/circuits/target/${circuit_name}_vkHash.json`,
   );
   if (!fs.existsSync(VK_HASH_PATH)) {
     console.log(
@@ -202,17 +175,6 @@ export async function verifyProof(
     submissionMode: "attestation",
   };
 
-  
-  const payloads_path = path.join(__dirname, "payloads_and_respones");
-  if (!fs.existsSync(payloads_path)) {
-    fs.mkdirSync(payloads_path, { recursive: true });
-  }
-
-  fs.writeFileSync(
-    path.join(payloads_path, `${circuit_name}_proof_payload.json`),
-    JSON.stringify(proof_payload),
-  );
-
   console.log("## Submitting Proof to Kurier");
   const submit_response = await axios.post(
     `${KURIER_URL}/submit-proof/${KURIER_API}`,
@@ -224,17 +186,6 @@ export async function verifyProof(
     submit_response.status,
   );
 
-  const path_to_submit_proof_response = path.join(
-    __dirname,
-    "payloads_and_respones",
-    `${circuit_name}_proof_response.json`,
-  );
-
-  fs.writeFileSync(
-    path_to_submit_proof_response,
-    JSON.stringify(submit_response.data),
-  );
-
   console.log(
     `==> Submit Response:\n`,
     JSON.stringify(submit_response.data, null, 2),
@@ -243,43 +194,75 @@ export async function verifyProof(
     throw new Error("[ERR: Proof Verification] Optimistic verification failed");
   }
 
-  const jobId = submit_response.data.jobId; // TODO: store jobId to db as TEXT
+  const jobId = submit_response.data.jobId;
+  const optimisticVerify = submit_response.data.optimisticVerify;
   console.log(
     `## Proof submitted successfully for ${circuit_name}. Job ID: ${jobId}`,
   );
 
-  while (true) {
-    const job_status_response = await axios.get(
-      `${KURIER_URL}/job-status/${KURIER_API}/${jobId}`,
-    );
-    if (job_status_response.data.status === "Aggregated") {
-      console.log("##Job aggregated successfully");
-      console.log(job_status_response.data);
+  return { jobId, optimisticVerify };
+}
 
-      
-      const aggregations_dir = path.join(__dirname, "aggregations");
-      if (!fs.existsSync(aggregations_dir)) {
-        fs.mkdirSync(aggregations_dir, { recursive: true });
-      }
+// ---------------------------------------------------------------------------
+// Map from Kurier API status strings → local VerificationStatus enum.
+// Kept as a constant so unrecognised values surface immediately at runtime.
+// ---------------------------------------------------------------------------
+const KURIER_STATUS_MAP: Record<string, VerificationStatus> = {
+  Queued: VerificationStatus.QUEUED,
+  Valid: VerificationStatus.VALID,
+  Submitted: VerificationStatus.SUBMITTED,
+  IncludedInBlock: VerificationStatus.INCLUDED_IN_BLOCK,
+  Finalized: VerificationStatus.FINALIZED,
+  AggregationPending: VerificationStatus.AGGREGATION_PENDING,
+  Aggregated: VerificationStatus.AGGREGATED,
+  Failed: VerificationStatus.FAILED,
+};
 
-      const aggregation_path = path.join(
-        aggregations_dir,
-        `${job_status_response.data.aggregationId}.json`,
-      );
-      fs.writeFileSync(
-        
-        aggregation_path,
-        JSON.stringify(job_status_response.data, null, 2),
-      );
-      console.log(`## Aggregation result saved to ${aggregation_path}`);
-      break; // Exit loop after successful aggregation
-    } else if (job_status_response.data.status === "Failed") {
-      console.error("##Job failed:", job_status_response.data);
-      throw new Error("[ERR: ZKV] Proof aggregation failed");
-    } else {
-      console.log("##Job status: ", job_status_response.data.status);
-      console.log(`==> Waiting for job to be aggregated...`);
-      await new Promise((resolve) => setTimeout(resolve, 20000)); // Wait for 20 seconds before checking again
-    }
+/**
+ * Query the Kurier relayer for the current status of a verification job.
+ *
+ * Returns only the fields that map to the `VerificationJob` Prisma model
+ * so the API layer can persist them without further transformation.
+ *
+ * @param jobId — The Kurier job ID returned by `verifyProof()`.
+ */
+export async function queryKurierStatus(
+  jobId: string,
+): Promise<KurierJobStatusResponse> {
+  const { KURIER_URL, KURIER_API } = process.env;
+  if (!KURIER_URL || !KURIER_API) {
+    throw new Error("[ERR: Env] Missing environment variables");
   }
+
+  // 1. Query the Kurier relayer for the job's current lifecycle status
+  console.log(`## Querying Kurier job status for jobId: ${jobId}`);
+  const job_status_response = await axios.get(
+    `${KURIER_URL}/job-status/${KURIER_API}/${jobId}`,
+  );
+
+  const data = job_status_response.data;
+  console.log(`==> Kurier status response:\n`, JSON.stringify(data, null, 2));
+
+  // 2. Map the Kurier status string to the local VerificationStatus enum
+  const mappedStatus = KURIER_STATUS_MAP[data.status];
+  if (!mappedStatus) {
+    throw new Error(
+      `[ERR: Kurier] Unrecognised verification status "${data.status}" for jobId ${jobId}`,
+    );
+  }
+
+  // 3. Extract only the fields that correspond to the VerificationJob model.
+  //    - txHash:             populated once SUBMITTED or later
+  //    - aggregationId:      populated at AGGREGATION_PENDING or later
+  //    - aggregationDetails: full aggregation metadata blob (nullable)
+  const result: KurierJobStatusResponse = {
+    verificationStatus: mappedStatus,
+    txHash: data.txHash ?? null,
+    aggregationId: data.aggregationId ?? null,
+    aggregationDetails: data.aggregationDetails ?? null,
+  };
+
+  console.log(`## Kurier job ${jobId} status: ${result.verificationStatus}`);
+
+  return result;
 }

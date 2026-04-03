@@ -14,7 +14,11 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "postinstall": "prisma generate",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:seed": "tsx src/seed.ts"
+  },
+  "prisma": {
+    "seed": "tsx src/seed.ts"
   },
   "dependencies": {
     "@minesweeper/env": "workspace:*",
@@ -28,6 +32,7 @@
     "@minesweeper/config": "workspace:*",
     "@types/pg": "^8.16.0",
     "prisma": "^7.2.0",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
